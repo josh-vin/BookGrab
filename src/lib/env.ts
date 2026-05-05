@@ -31,7 +31,17 @@ const getMamToken = (): string | undefined => {
 export const getServerEnvVariables = () => {
   return {
     MAM_TOKEN: getMamToken(),
-    TRANSMISSION_URL: getEnvVariable("TRANSMISSION_URL"),
+    // Which torrent backend to use. Possible values: 'transmission' | 'qbittorrent'. Optional, defaults to 'transmission'
+    TORRENT_API: getOptionalEnvVariable("TORRENT_API"),
+
+    // Transmission settings (optional if using qBittorrent)
+    TRANSMISSION_URL: getOptionalEnvVariable("TRANSMISSION_URL"),
+
+    // qBittorrent settings (optional if using Transmission)
+    QBITTORRENT_URL: getOptionalEnvVariable("QBITTORRENT_URL"),
+    QBITTORRENT_USERNAME: getOptionalEnvVariable("QBITTORRENT_USERNAME"),
+    QBITTORRENT_PASSWORD: getOptionalEnvVariable("QBITTORRENT_PASSWORD"),
+
     AUDIOBOOK_DESTINATION_PATH: getEnvVariable("AUDIOBOOK_DESTINATION_PATH"),
     EBOOK_DESTINATION_PATH: getEnvVariable("EBOOK_DESTINATION_PATH"),
   };

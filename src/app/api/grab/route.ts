@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { addTorrent } from "@/lib/transmission-api";
+import { addTorrent } from "@/lib/torrent";
 
 export async function POST(request: NextRequest) {
   try {

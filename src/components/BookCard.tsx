@@ -222,7 +222,7 @@ export default function BookCard({ book }: { book: Book }) {
           fontWeight: "600",
           textAlign: "center"
         }}>
-          Added to Transmission!
+          Added to Client!
         </div>
       )}
 
