@@ -1,6 +1,42 @@
 import { getServerEnvVariables } from "./env";
 import { Book, SearchResponse } from "../types";
 
+const MAM_ERROR_CODES: Record<string, string> = {
+  "No Session Cookie": "403 - No Session Cookie: Didn't properly provide the mam_id session cookie",
+  "Invalid session": "403 - Invalid session: System deemed the session invalid (bad mam_id value, or you've moved off the locked IP/ASN)",
+  "Invalid session - IP mismatch": "403 - IP mismatch: Session is locked to a single IP address, and you are not accessing from it",
+  "Invalid session - ASN mismatch": "403 - ASN mismatch: Session is locked to a list of ASNs, but you are accessing from a different one",
+  "Invalid session - Invalid Cookie": "403 - Invalid Cookie: System could not decode the cookie. Bad/corrupted value",
+  "Last Change too recent": "429 - Last Change too recent: You've changed too recently. Try again later",
+};
+
+async function getMamToken(): Promise<string | undefined> {
+  const { MAM_TOKEN: envToken, MOUSEHOLE_ENDPOINT } = getServerEnvVariables();
+
+  // If Mousehole is configured, fetch the token from there
+  if (MOUSEHOLE_ENDPOINT) {
+    try {
+      console.log("[MAM] Fetching token from Mousehole:", MOUSEHOLE_ENDPOINT);
+      const response = await fetch(`${MOUSEHOLE_ENDPOINT}/state`);
+      if (!response.ok) {
+        console.error(
+          `[MAM] Failed to fetch from Mousehole: ${response.status}`,
+        );
+        return envToken;
+      }
+      const data = await response.json();
+      if (data.currentCookie) {
+        console.log("[MAM] Got token from Mousehole");
+        return data.currentCookie;
+      }
+    } catch (error) {
+      console.error("[MAM] Error fetching token from Mousehole:", error);
+    }
+  }
+
+  return envToken;
+}
+
 export async function searchBooks(
   query: string,
   mamToken?: string,
@@ -8,10 +44,9 @@ export async function searchBooks(
   sortType: string = "seeds",
 ): Promise<SearchResponse> {
   try {
-    const { MAM_TOKEN: envToken } = getServerEnvVariables();
-    const MAM_TOKEN = mamToken || envToken;
+    const token = mamToken || (await getMamToken());
 
-    if (!MAM_TOKEN) {
+    if (!token) {
       throw new Error(
         "MAM_TOKEN is required. Please configure it in Settings or set it in your environment variables.",
       );
@@ -46,17 +81,16 @@ export async function searchBooks(
       headers: {
         "User-Agent": "BookGrab/1.0",
         "Content-Type": "application/json",
-        Cookie: `mam_id=${MAM_TOKEN}`,
+        Cookie: `mam_id=${token}`,
       },
       body: JSON.stringify(searchPayload),
       next: { revalidate: 0 }, // Don't cache this request
     });
 
     if (!response.ok) {
-      console.error({ url, status: response.status });
-      throw new Error(
-        `Failed to fetch from MAM: ${response.status} ${response.statusText}`,
-      );
+      const errorMsg = `Failed to fetch from MAM: ${response.status} ${response.statusText}`;
+      console.error({ url, status: response.status, message: errorMsg });
+      throw new Error(errorMsg);
     }
 
     const jsonData = await response.json();

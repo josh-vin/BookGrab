@@ -1,6 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerEnvVariables } from "@/lib/env";
 
+async function getMamToken(): Promise<string | undefined> {
+  const { MAM_TOKEN: envToken, MOUSEHOLE_ENDPOINT } = getServerEnvVariables();
+
+  // If Mousehole is configured, fetch the token from there
+  if (MOUSEHOLE_ENDPOINT) {
+    try {
+      const response = await fetch(`${MOUSEHOLE_ENDPOINT}/state`);
+      if (!response.ok) {
+        return envToken;
+      }
+      const data = await response.json();
+      if (data.currentCookie) {
+        return data.currentCookie;
+      }
+    } catch (error) {
+      console.error("[Image Proxy] Error fetching token from Mousehole:", error);
+    }
+  }
+
+  return envToken;
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const url = searchParams.get("url");
@@ -13,10 +35,9 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // Get MAM token from request header (sent by client) or fall back to env
-    const mamToken = request.headers.get("x-mam-token");
-    const { MAM_TOKEN: envToken } = getServerEnvVariables();
-    const MAM_TOKEN = mamToken || envToken;
+    // Get MAM token from request header (sent by client) or fall back to Mousehole/env
+    const mamTokenHeader = request.headers.get("x-mam-token");
+    const mamToken = mamTokenHeader || (await getMamToken());
 
     console.log("Fetching image from:", url);
 
@@ -30,7 +51,7 @@ export async function GET(request: NextRequest) {
       const pageResponse = await fetch(pageUrl, {
         headers: {
           "User-Agent": "BookGrab/1.0",
-          Cookie: MAM_TOKEN ? `mam_id=${MAM_TOKEN}` : "",
+          Cookie: mamToken ? `mam_id=${mamToken}` : "",
         },
       });
 

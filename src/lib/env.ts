@@ -31,6 +31,7 @@ const getMamToken = (): string | undefined => {
 export const getServerEnvVariables = () => {
   return {
     MAM_TOKEN: getMamToken(),
+    MOUSEHOLE_ENDPOINT: getOptionalEnvVariable("MOUSEHOLE_ENDPOINT"),
     // Which torrent backend to use. Possible values: 'transmission' | 'qbittorrent'. Optional, defaults to 'transmission'
     TORRENT_API: getOptionalEnvVariable("TORRENT_API"),
 
