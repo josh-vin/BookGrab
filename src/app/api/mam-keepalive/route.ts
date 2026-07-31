@@ -29,30 +29,9 @@ const MAM_ERROR_CODES: Record<string, { code: number; description: string }> = {
 };
 
 async function getMamToken(): Promise<string | undefined> {
-  const { MAM_TOKEN: envToken, MOUSEHOLE_ENDPOINT } = getServerEnvVariables();
-
-  // If Mousehole is configured, fetch the token from there
-  if (MOUSEHOLE_ENDPOINT) {
-    try {
-      console.log("[MAM Keepalive] Fetching token from Mousehole:", MOUSEHOLE_ENDPOINT);
-      const response = await fetch(`${MOUSEHOLE_ENDPOINT}/state`);
-      if (!response.ok) {
-        console.error(
-          `[MAM Keepalive] Failed to fetch from Mousehole: ${response.status}`,
-        );
-        return envToken;
-      }
-      const data = await response.json();
-      if (data.currentCookie) {
-        console.log("[MAM Keepalive] Got token from Mousehole");
-        return data.currentCookie;
-      }
-    } catch (error) {
-      console.error("[MAM Keepalive] Error fetching token from Mousehole:", error);
-    }
-  }
-
-  return envToken;
+  const { MAM_TOKEN } = getServerEnvVariables();
+  const token = mamToken || MAM_TOKEN;
+  return token;
 }
 
 export async function POST(request: NextRequest) {

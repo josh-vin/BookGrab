@@ -19,12 +19,22 @@ const getMamToken = (): string | undefined => {
   const filePath = getOptionalEnvVariable("MAM_TOKEN_FILE");
   if (filePath) {
     try {
-      return readFileSync(filePath, "utf-8").trim();
+      const raw = readFileSync(filePath, "utf-8").trim();
+      // Mousehole's state.json wraps the cookie in a JSON object; a plain
+      // token file just contains the raw cookie string. Support both.
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed.cookie === "string") {
+          return parsed.cookie;
+        }
+      } catch {
+        // Not JSON — treat the file contents as the raw token
+      }
+      return raw;
     } catch {
       console.error(`Failed to read MAM token from file: ${filePath}`);
     }
   }
-
   return undefined;
 };
 

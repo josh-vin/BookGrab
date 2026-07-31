@@ -1,11 +1,15 @@
-version: '3'
-
 services:
   bookgrab:
-    build: .  # Build from local Dockerfile instead of using remote image
+    build: .
     container_name: bookgrab
     ports:
       - "3000:3000"
     env_file:
       - .env
+    volumes:
+      - "mousehole:/mousehole-state:ro"
     restart: unless-stopped
+
+volumes:
+  mousehole:
+    external: true

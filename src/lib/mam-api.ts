@@ -10,33 +10,6 @@ const MAM_ERROR_CODES: Record<string, string> = {
   "Last Change too recent": "429 - Last Change too recent: You've changed too recently. Try again later",
 };
 
-async function getMamToken(): Promise<string | undefined> {
-  const { MAM_TOKEN: envToken, MOUSEHOLE_ENDPOINT } = getServerEnvVariables();
-
-  // If Mousehole is configured, fetch the token from there
-  if (MOUSEHOLE_ENDPOINT) {
-    try {
-      console.log("[MAM] Fetching token from Mousehole:", MOUSEHOLE_ENDPOINT);
-      const response = await fetch(`${MOUSEHOLE_ENDPOINT}/state`);
-      if (!response.ok) {
-        console.error(
-          `[MAM] Failed to fetch from Mousehole: ${response.status}`,
-        );
-        return envToken;
-      }
-      const data = await response.json();
-      if (data.currentCookie) {
-        console.log("[MAM] Got token from Mousehole");
-        return data.currentCookie;
-      }
-    } catch (error) {
-      console.error("[MAM] Error fetching token from Mousehole:", error);
-    }
-  }
-
-  return envToken;
-}
-
 export async function searchBooks(
   query: string,
   mamToken?: string,
@@ -44,7 +17,8 @@ export async function searchBooks(
   sortType: string = "seeds",
 ): Promise<SearchResponse> {
   try {
-    const token = mamToken || (await getMamToken());
+    const { MAM_TOKEN } = getServerEnvVariables();
+    const token = mamToken || MAM_TOKEN;
 
     if (!token) {
       throw new Error(

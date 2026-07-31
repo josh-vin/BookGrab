@@ -2,25 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerEnvVariables } from "@/lib/env";
 
 async function getMamToken(): Promise<string | undefined> {
-  const { MAM_TOKEN: envToken, MOUSEHOLE_ENDPOINT } = getServerEnvVariables();
-
-  // If Mousehole is configured, fetch the token from there
-  if (MOUSEHOLE_ENDPOINT) {
-    try {
-      const response = await fetch(`${MOUSEHOLE_ENDPOINT}/state`);
-      if (!response.ok) {
-        return envToken;
-      }
-      const data = await response.json();
-      if (data.currentCookie) {
-        return data.currentCookie;
-      }
-    } catch (error) {
-      console.error("[Image Proxy] Error fetching token from Mousehole:", error);
-    }
-  }
-
-  return envToken;
+    const { MAM_TOKEN } = getServerEnvVariables();
+    const token = mamToken || MAM_TOKEN;
+    return token;
 }
 
 export async function GET(request: NextRequest) {
